@@ -1,9 +1,10 @@
+import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Layout from './components/layout/Layout';
-import HomePage from './pages/HomePage';
-import PasarPage from './pages/PasarPage';
-import ChatroomPage from './pages/ChatroomPage';
-import BeritaPage from './pages/BeritaPage';
+import Layout from './components/layout/Layout.jsx';
+import HomePage from './pages/HomePage.jsx';
+import PasarPage from './pages/PasarPage.jsx';
+import ChatroomPage from './pages/ChatroomPage.jsx';
+import BeritaPage from './pages/BeritaPage.jsx';
 
 export default function App() {
   return (

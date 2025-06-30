@@ -1,8 +1,9 @@
+import React from 'react';
 import { Outlet } from 'react-router-dom';
-import Navbar from './Navbar';
+import Navbar from './Navbar.jsx';
+import styles from './Layout.module.css';
 
 const Layout = () => {
-  const styles = { layout: "layout", mainContent: "mainContent" };
   return (
     <div className={styles.layout}>
       <Navbar />
@@ -12,3 +13,5 @@ const Layout = () => {
     </div>
   );
 };
+
+export default Layout;
