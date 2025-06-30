@@ -1,0 +1,30 @@
+.pageTitle {
+  font-size: 1.875rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+}
+
+.newsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.newsItem {
+  background-color: #1F2937;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #374151;
+}
+
+.newsTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.newsMeta {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+  margin-top: 0.25rem;
+}
