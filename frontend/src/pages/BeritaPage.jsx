@@ -1,15 +1,21 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import styles from './BeritaPage.module.css';
 
 const BeritaPage = () => {
-    const styles = { pageTitle: "pageTitle", newsContainer: "newsContainer", newsItem: "newsItem", newsTitle: "newsTitle", newsMeta: "newsMeta"};
     const [news, setNews] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         axios.get('http://localhost:3001/api/berita')
-            .then(response => { setNews(response.data); setLoading(false); })
-            .catch(error => { console.error("Error fetching news:", error); setLoading(false); });
+            .then(response => {
+                setNews(response.data);
+                setLoading(false);
+            })
+            .catch(error => {
+                console.error("Error fetching news:", error);
+                setLoading(false);
+            });
     }, []);
 
     if (loading) return <p>Memuat berita...</p>;
@@ -28,3 +34,5 @@ const BeritaPage = () => {
         </div>
     );
 };
+
+export default BeritaPage;

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const ChatroomPage = () => {
     const [messages, setMessages] = useState([]);
@@ -6,17 +6,32 @@ const ChatroomPage = () => {
     const ws = useRef(null);
 
     useEffect(() => {
+        // Ganti dengan alamat IP atau domain server WebSocket Anda jika perlu
         ws.current = new WebSocket('ws://localhost:3001');
+
+        ws.current.onopen = () => {
+            console.log("WebSocket terhubung");
+        };
+
         ws.current.onmessage = (event) => {
             const message = JSON.parse(event.data);
             setMessages(prev => [...prev, message]);
         };
-        return () => ws.current.close();
+
+        ws.current.onclose = () => {
+            console.log("WebSocket terputus");
+        };
+
+        return () => {
+            if (ws.current) {
+                ws.current.close();
+            }
+        };
     }, []);
 
     const sendMessage = (e) => {
         e.preventDefault();
-        if (input.trim() && ws.current.readyState === WebSocket.OPEN) {
+        if (input.trim() && ws.current && ws.current.readyState === WebSocket.OPEN) {
             ws.current.send(JSON.stringify({ user: 'PenggunaX', message: input }));
             setInput('');
         }
@@ -46,3 +61,5 @@ const ChatroomPage = () => {
         </div>
     );
 };
+
+export default ChatroomPage;
