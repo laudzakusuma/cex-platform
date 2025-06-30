@@ -1,9 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-// import styles from './Navbar.module.css';
+import styles from './Navbar.module.css';
 
 const Navbar = () => {
-  // Mock styles object untuk demonstrasi satu file
   const styles = {
     header: "header", navContainer: "navContainer", leftSection: "leftSection", logo: "logo", navLinks: "navLinks",
     navLink: "navLink", navLinkActive: "navLinkActive", connectButton: "connectButton", connectedButton: "connectedButton"
