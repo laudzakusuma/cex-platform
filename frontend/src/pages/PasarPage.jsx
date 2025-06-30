@@ -1,3 +1,5 @@
+import React from 'react';
+
 const PasarPage = () => {
     return (
         <div>
@@ -7,3 +9,5 @@ const PasarPage = () => {
         </div>
     );
 };
+
+export default PasarPage;
