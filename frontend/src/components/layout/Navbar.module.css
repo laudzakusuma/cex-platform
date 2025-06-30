@@ -1,0 +1,84 @@
+.header {
+  background-color: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid rgba(55, 65, 81, 0.5);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.navContainer {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4rem;
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.logo span {
+  color: #3B82F6;
+}
+
+.navLinks {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .navLinks {
+    display: flex;
+    gap: 1.5rem;
+  }
+}
+
+.navLink {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+  transition: color 0.2s;
+}
+
+.navLink:hover {
+  color: #FFFFFF;
+}
+
+.navLinkActive {
+  composes: navLink;
+  color: #FFFFFF;
+}
+
+.connectButton {
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  background-color: #2563EB;
+}
+
+.connectButton:hover {
+  background-color: #1D4ED8;
+  transform: scale(1.05);
+}
+
+.connectedButton {
+  composes: connectButton;
+  background-color: #16A34A;
+}
+
+.connectedButton:hover {
+  background-color: #15803D;
+}
