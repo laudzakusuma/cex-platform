@@ -1,7 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
 import { Suspense } from 'react';
-import styles from './HomePage.module.css';
 
 const AnimatedSphere = () => (
     <Sphere visible args={[1, 100, 200]} scale={2.5}>

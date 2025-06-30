@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import styles from './BeritaPage.module.css';
 
 const BeritaPage = () => {
     const styles = { pageTitle: "pageTitle", newsContainer: "newsContainer", newsItem: "newsItem", newsTitle: "newsTitle", newsMeta: "newsMeta"};

@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom';
 import { useState } from 'react';
-import styles from './Navbar.module.css';
 
 const Navbar = () => {
   const styles = {
