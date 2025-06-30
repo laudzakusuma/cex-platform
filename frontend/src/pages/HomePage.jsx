@@ -1,6 +1,7 @@
+import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sphere, MeshDistortMaterial } from '@react-three/drei';
-import { Suspense } from 'react';
+import styles from './HomePage.module.css';
 
 const AnimatedSphere = () => (
     <Sphere visible args={[1, 100, 200]} scale={2.5}>
@@ -9,7 +10,6 @@ const AnimatedSphere = () => (
 );
 
 const HomePage = () => {
-  const styles = { container: "container", textSection: "textSection", title: "title", subtitle: "subtitle", canvasContainer: "canvasContainer"};
   return (
     <div className={styles.container}>
       <div className={styles.textSection}>
@@ -33,3 +33,5 @@ const HomePage = () => {
     </div>
   );
 };
+
+export default HomePage;

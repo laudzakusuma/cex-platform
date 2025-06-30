@@ -1,11 +1,8 @@
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useState } from 'react';
+import styles from './Navbar.module.css';
 
 const Navbar = () => {
-  const styles = {
-    header: "header", navContainer: "navContainer", leftSection: "leftSection", logo: "logo", navLinks: "navLinks",
-    navLink: "navLink", navLinkActive: "navLinkActive", connectButton: "connectButton", connectedButton: "connectedButton"
-  };
   const [isWalletConnected, setIsWalletConnected] = useState(false);
 
   const handleConnectWallet = () => setIsWalletConnected(!isWalletConnected);
@@ -30,3 +27,5 @@ const Navbar = () => {
     </header>
   );
 };
+
+export default Navbar;
