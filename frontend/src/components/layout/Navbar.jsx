@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useWallet } from '../../context/WalletContext.jsx';
 import styles from './Navbar.module.css';
 
 const Navbar = () => {
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
+  const { account, connectWallet, disconnectWallet } = useWallet();
 
-  const handleConnectWallet = () => setIsWalletConnected(!isWalletConnected);
+  const truncateAddress = (address) => {
+    if (!address) return "";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
 
   return (
     <header className={styles.header}>
@@ -20,9 +24,20 @@ const Navbar = () => {
             <NavLink to="/berita" className={({ isActive }) => isActive ? styles.navLinkActive : styles.navLink}>Berita</NavLink>
           </nav>
         </div>
-        <button onClick={handleConnectWallet} className={isWalletConnected ? styles.connectedButton : styles.connectButton}>
-          {isWalletConnected ? 'Terhubung' : 'Hubungkan Dompet'}
-        </button>
+        
+        {/* Logika tombol yang diperbarui */}
+        {account ? (
+          <div className={styles.walletInfo}>
+            <span className={styles.addressText}>{truncateAddress(account)}</span>
+            <button onClick={disconnectWallet} className={styles.disconnectButton}>
+              Putuskan
+            </button>
+          </div>
+        ) : (
+          <button onClick={connectWallet} className={styles.connectButton}>
+            Hubungkan Dompet
+          </button>
+        )}
       </div>
     </header>
   );
