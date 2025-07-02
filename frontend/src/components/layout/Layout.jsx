@@ -1,13 +1,11 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar.jsx';
-import BackgroundCanvas from './BackgroundCanvas.jsx';
 import styles from './Layout.module.css';
 
 const Layout = () => {
   return (
     <div className={styles.layout}>
-      <BackgroundCanvas /> {/* Tambahkan latar belakang 3D di sini */}
       <Navbar />
       <main className={styles.mainContent}>
         <Outlet />
