@@ -21,10 +21,14 @@ app.get('/api/pasar', (req, res) => {
 app.get('/api/berita', async (req, res) => {
     const API_KEY = '9cf3ebb90cd347f3a3e5d4db17b275ab';
     
-    const url = `https://newsapi.org/v2/everything?q=cryptocurrency&sortBy=publishedAt&language=id&pageSize=40&apiKey=${API_KEY}`;
+    const query = 'crypto OR bitcoin OR ethereum';
+    const url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=publishedAt&pageSize=40&apiKey=${API_KEY}`;
 
     try {
         const response = await axios.get(url);
+        
+        console.log(`[Berita] Diterima ${response.data.articles.length} artikel dari NewsAPI.`);
+        
         res.json(response.data.articles);
     } catch (error) {
         console.error("Error fetching news from NewsAPI:", error.message);
