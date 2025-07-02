@@ -1,65 +1,69 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import axios from 'axios';
 import { createChart } from 'lightweight-charts';
 import styles from './PasarPage.module.css';
 
-const ChartComponent = ({ data, isLoading }) => {
+// Komponen Grafik, dibungkus dengan React.memo untuk stabilitas maksimum.
+// React.memo mencegah komponen ini dirender ulang jika props-nya tidak berubah.
+const ChartComponent = memo(({ data, isLoading }) => {
     const chartContainerRef = useRef();
-    const chartRef = useRef();
+    const chartRef = useRef(null);
+    const seriesRef = useRef(null);
 
+    // Efek ini HANYA berjalan sekali untuk membuat dan membersihkan grafik.
     useEffect(() => {
         if (!chartContainerRef.current) return;
 
+        // 1. Membuat instance grafik dan seri data
         chartRef.current = createChart(chartContainerRef.current, {
             width: chartContainerRef.current.clientWidth,
             height: 500,
             layout: { backgroundColor: '#1F2937', textColor: 'rgba(255, 255, 255, 0.9)' },
             grid: { vertLines: { color: '#374151' }, horzLines: { color: '#374151' } },
-            crosshair: { mode: 0 },
-            rightPriceScale: { borderColor: '#4B5563' },
-            timeScale: { borderColor: '#4B5563' },
         });
 
-        const candleSeries = chartRef.current.addCandlestickSeries({
-            upColor: '#4ADE80', downColor: '#F87171', borderDownColor: '#F87171',
-            borderUpColor: '#4ADE80', wickDownColor: '#F87171', wickUpColor: '#4ADE80',
+        seriesRef.current = chartRef.current.addCandlestickSeries({
+            upColor: '#4ADE80', downColor: '#F87171',
         });
 
-        if (data && data.length > 0) {
-            candleSeries.setData(data);
-            chartRef.current.timeScale().fitContent();
-        }
-
+        // 2. Menangani perubahan ukuran jendela
         const handleResize = () => {
-            chartRef.current.applyOptions({ width: chartContainerRef.current.clientWidth });
+            if (chartRef.current) {
+                chartRef.current.resize(chartContainerRef.current.clientWidth, 500);
+            }
         };
         window.addEventListener('resize', handleResize);
 
+        // 3. Fungsi cleanup: Ini sangat penting untuk menghapus grafik saat komponen dilepas.
         return () => {
             window.removeEventListener('resize', handleResize);
-            chartRef.current.remove();
+            if (chartRef.current) {
+                chartRef.current.remove();
+                chartRef.current = null;
+            }
         };
-    }, []);
+    }, []); // Dependensi kosong memastikan ini hanya berjalan sekali.
 
+    // Efek terpisah yang HANYA bertugas memperbarui data pada grafik yang sudah ada.
     useEffect(() => {
-        if (chartRef.current && data && data.length > 0) {
-            const series = chartRef.current.serieses()[0];
-            if (series) {
-                series.setData(data);
+        if (seriesRef.current) {
+            seriesRef.current.setData(data || []); // Selalu berikan array, bahkan jika kosong.
+            if (data && data.length > 0 && chartRef.current) {
                 chartRef.current.timeScale().fitContent();
             }
         }
-    }, [data]);
+    }, [data]); // Efek ini hanya berjalan saat `data` berubah.
 
     return (
         <div className={styles.chartWrapper}>
-            {isLoading && <div className={styles.chartOverlay}>Memuat data...</div>}
+            {isLoading && <div className={styles.chartOverlay}>Memuat data grafik...</div>}
             <div ref={chartContainerRef} className={styles.chartContainer} />
         </div>
     );
-};
+});
 
 
+// Komponen Halaman Utama
 const PasarPage = () => {
     const [coinList, setCoinList] = useState([]);
     const [selectedCoin, setSelectedCoin] = useState(null);
@@ -68,6 +72,7 @@ const PasarPage = () => {
     const [isChartLoading, setIsChartLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Ambil daftar koin saat halaman pertama kali dimuat
     useEffect(() => {
         axios.get('http://localhost:3001/api/market/coins')
             .then(response => {
@@ -78,25 +83,31 @@ const PasarPage = () => {
                 setLoading(false);
             })
             .catch(err => {
-                setError("Gagal memuat daftar koin.");
+                setError("Gagal memuat daftar koin. Pastikan server backend berjalan.");
                 setLoading(false);
             });
     }, []);
 
+    // Ambil data grafik setiap kali koin yang dipilih berubah
     useEffect(() => {
         if (!selectedCoin) return;
-
+        
+        let isMounted = true;
         setIsChartLoading(true);
+        setChartData([]); // Kosongkan data lama untuk memicu pembaruan yang bersih
+
         axios.get(`http://localhost:3001/api/market/chart/${selectedCoin.id}`)
             .then(response => {
-                setChartData(response.data);
+                if (isMounted) setChartData(response.data);
             })
             .catch(err => {
-                setError(`Gagal memuat data untuk ${selectedCoin.name}.`);
+                if (isMounted) setError(`Gagal memuat data untuk ${selectedCoin.name}.`);
             })
             .finally(() => {
-                setIsChartLoading(false);
+                if (isMounted) setIsChartLoading(false);
             });
+        
+        return () => { isMounted = false; };
     }, [selectedCoin]);
 
     const formatCurrency = (number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(number);
@@ -134,6 +145,7 @@ const PasarPage = () => {
                         <h1>{selectedCoin.name} ({selectedCoin.symbol.toUpperCase()}/USD)</h1>
                     </div>
                 )}
+                {/* Komponen ChartComponent yang stabil */}
                 <ChartComponent data={chartData} isLoading={isChartLoading} />
             </div>
         </div>

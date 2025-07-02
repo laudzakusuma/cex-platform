@@ -1,7 +1,8 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const { WebSocketServer } = require('ws');
-const cors =require('cors');
+const cors = require('cors');
 const axios = require('axios');
 
 const app = express();
@@ -9,62 +10,113 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
-const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+const BINANCE_API = 'https://api.binance.com/api/v3';
 
+// Konfigurasi untuk mengabaikan error sertifikat SSL
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false,
+});
+
+// Cache sederhana
 const apiCache = new Map();
 const CACHE_DURATION_MS = 60 * 1000;
-
 const getFromCache = (key) => {
     const entry = apiCache.get(key);
     if (entry && (Date.now() - entry.timestamp < CACHE_DURATION_MS)) {
-        console.log(`[Cache] Mengambil data dari cache untuk: ${key}`);
+        console.log(`[Cache] HIT: Mengambil data dari cache untuk: ${key}`);
         return entry.data;
     }
+    console.log(`[Cache] MISS: Tidak ada cache valid untuk: ${key}`);
     return null;
 };
-
 const setToCache = (key, data) => {
     apiCache.set(key, { timestamp: Date.now(), data });
 };
 
+// Peta informasi koin
+const coinInfoMap = {
+    'BTC': { name: 'Bitcoin', image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1.png' },
+    'ETH': { name: 'Ethereum', image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png' },
+    'BNB': { name: 'BNB', image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png' },
+    'SOL': { name: 'Solana', image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png' },
+    'XRP': { name: 'XRP', image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/52.png' },
+    'DOGE': { name: 'Dogecoin', image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/74.png' },
+    'ADA': { name: 'Cardano', image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/2010.png' },
+    'AVAX': { name: 'Avalanche', image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/5805.png' },
+    'SHIB': { name: 'Shiba Inu', image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/5994.png' },
+    'DOT': { name: 'Polkadot', image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/6636.png' },
+};
+
+// Rute: Mendapatkan daftar koin dari Binance
 app.get('/api/market/coins', async (req, res) => {
-    const url = `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=false`;
-    
+    const url = `${BINANCE_API}/ticker/24hr`;
     const cachedData = getFromCache(url);
     if (cachedData) return res.json(cachedData);
 
     try {
-        console.log(`[API] Meminta data baru untuk: ${url}`);
-        const response = await axios.get(url);
-        setToCache(url, response.data);
-        res.json(response.data);
+        console.log(`[API] REQUEST: Meminta daftar koin dari Binance.`);
+        const response = await axios.get(url, { httpsAgent });
+        
+        const formattedData = response.data
+            .filter(d => d.symbol.endsWith('USDT') && coinInfoMap[d.symbol.replace('USDT', '')])
+            .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
+            .slice(0, 15)
+            .map(d => {
+                const baseAsset = d.symbol.replace('USDT', '');
+                const info = coinInfoMap[baseAsset];
+                return {
+                    id: d.symbol,
+                    symbol: baseAsset,
+                    name: info.name,
+                    image: info.image,
+                    current_price: parseFloat(d.lastPrice),
+                    price_change_percentage_24h: parseFloat(d.priceChangePercent),
+                };
+            });
+
+        setToCache(url, formattedData);
+        console.log(`[API] SUCCESS: Berhasil mendapatkan dan memformat ${formattedData.length} koin.`);
+        res.json(formattedData);
     } catch (error) {
-        console.error("Error fetching coin list from CoinGecko:", error.message);
+        // --- BLOK PENANGANAN ERROR YANG DIPERBARUI ---
+        if (axios.isAxiosError(error)) {
+            // Menangkap error spesifik dari axios (seperti status code 4xx/5xx)
+            console.error("[API] Axios Error:", error.response?.status, error.message);
+        } else {
+            // Menangkap error lain (seperti masalah jaringan, sertifikat, dll.)
+            console.error("[API] Generic Error:", error.message);
+        }
         res.status(500).json({ message: "Gagal mengambil daftar koin." });
     }
 });
 
-app.get('/api/market/chart/:coinId', async (req, res) => {
-    const { coinId } = req.params;
-    const url = `${COINGECKO_API}/coins/${coinId}/ohlc?vs_currency=usd&days=90`;
-    
+// Rute: Mendapatkan data grafik dari Binance
+app.get('/api/market/chart/:pairSymbol', async (req, res) => {
+    const { pairSymbol } = req.params;
+    const url = `${BINANCE_API}/klines?symbol=${pairSymbol}&interval=1d&limit=100`;
     const cachedData = getFromCache(url);
     if (cachedData) return res.json(cachedData);
     
     try {
-        console.log(`[API] Meminta data baru untuk: ${url}`);
-        const response = await axios.get(url);
+        console.log(`[API] REQUEST: Meminta data grafik untuk ${pairSymbol}.`);
+        const response = await axios.get(url, { httpsAgent });
         const formattedData = response.data.map(d => ({
             time: d[0] / 1000,
-            open: d[1],
-            high: d[2],
-            low: d[3],
-            close: d[4],
+            open: parseFloat(d[1]),
+            high: parseFloat(d[2]),
+            low: parseFloat(d[3]),
+            close: parseFloat(d[4]),
         }));
         setToCache(url, formattedData);
+        console.log(`[API] SUCCESS: Berhasil mendapatkan ${formattedData.length} titik data untuk ${pairSymbol}.`);
         res.json(formattedData);
     } catch (error) {
-        console.error(`Error fetching chart data for ${coinId}:`, error.message);
+        // --- BLOK PENANGANAN ERROR YANG DIPERBARUI ---
+        if (axios.isAxiosError(error)) {
+            console.error(`[API] Axios Error untuk ${pairSymbol}:`, error.response?.status, error.message);
+        } else {
+            console.error(`[API] Generic Error untuk ${pairSymbol}:`, error.message);
+        }
         res.status(500).json({ message: "Gagal mengambil data grafik." });
     }
 });
@@ -81,7 +133,6 @@ app.get('/api/berita', async (req, res) => {
         res.status(500).json({ message: "Gagal mengambil berita dari sumber eksternal." });
     }
 });
-
 
 const server = http.createServer(app);
 
