@@ -1,8 +1,31 @@
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.headerContainer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
 .pageTitle {
   font-size: 1.875rem;
   font-weight: bold;
-  margin-bottom: 1.5rem;
   color: #FFFFFF;
+  margin: 0;
+}
+
+.canvasContainer {
+  width: 50px;
+  height: 50px;
 }
 
 .loadingText,
@@ -30,17 +53,17 @@
   color: #D1D5DB;
 }
 
-.marketTable th,
-.marketTable td {
-  padding: 1rem 1.5rem;
-  text-align: left;
-}
-
 .marketTable thead {
   background-color: #374151;
   font-size: 0.875rem;
   color: #9CA3AF;
   text-transform: uppercase;
+}
+
+.marketTable th,
+.marketTable td {
+  padding: 1rem 1.5rem;
+  text-align: left;
 }
 
 .marketTable tbody tr {
@@ -51,8 +74,9 @@
   border-bottom: none;
 }
 
-.marketTable tbody tr:hover {
-  background-color: #2b3748;
+.animatedRow {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out forwards;
 }
 
 .coinName {
@@ -89,9 +113,10 @@
   border-radius: 0.5rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.2s;
 }
 
 .tradeButton:hover {
   background-color: #2563EB;
+  transform: scale(1.05);
 }
