@@ -1,7 +1,7 @@
 const express = require('express');
 const http = require('http');
 const { WebSocketServer } = require('ws');
-const cors = require('cors');
+const cors =require('cors');
 const axios = require('axios');
 
 const app = express();
@@ -11,10 +11,32 @@ app.use(express.json());
 const PORT = process.env.PORT || 3001;
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 
+const apiCache = new Map();
+const CACHE_DURATION_MS = 60 * 1000;
+
+const getFromCache = (key) => {
+    const entry = apiCache.get(key);
+    if (entry && (Date.now() - entry.timestamp < CACHE_DURATION_MS)) {
+        console.log(`[Cache] Mengambil data dari cache untuk: ${key}`);
+        return entry.data;
+    }
+    return null;
+};
+
+const setToCache = (key, data) => {
+    apiCache.set(key, { timestamp: Date.now(), data });
+};
+
 app.get('/api/market/coins', async (req, res) => {
+    const url = `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=false`;
+    
+    const cachedData = getFromCache(url);
+    if (cachedData) return res.json(cachedData);
+
     try {
-        const url = `${COINGECKO_API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=false`;
+        console.log(`[API] Meminta data baru untuk: ${url}`);
         const response = await axios.get(url);
+        setToCache(url, response.data);
         res.json(response.data);
     } catch (error) {
         console.error("Error fetching coin list from CoinGecko:", error.message);
@@ -24,10 +46,14 @@ app.get('/api/market/coins', async (req, res) => {
 
 app.get('/api/market/chart/:coinId', async (req, res) => {
     const { coinId } = req.params;
+    const url = `${COINGECKO_API}/coins/${coinId}/ohlc?vs_currency=usd&days=90`;
+    
+    const cachedData = getFromCache(url);
+    if (cachedData) return res.json(cachedData);
+    
     try {
-        const url = `${COINGECKO_API}/coins/${coinId}/ohlc?vs_currency=usd&days=90`;
+        console.log(`[API] Meminta data baru untuk: ${url}`);
         const response = await axios.get(url);
-
         const formattedData = response.data.map(d => ({
             time: d[0] / 1000,
             open: d[1],
@@ -35,6 +61,7 @@ app.get('/api/market/chart/:coinId', async (req, res) => {
             low: d[3],
             close: d[4],
         }));
+        setToCache(url, formattedData);
         res.json(formattedData);
     } catch (error) {
         console.error(`Error fetching chart data for ${coinId}:`, error.message);

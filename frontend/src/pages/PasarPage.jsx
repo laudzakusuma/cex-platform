@@ -1,110 +1,132 @@
-import React, { useState, useEffect, Suspense, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { Cylinder } from '@react-three/drei';
+import { createChart } from 'lightweight-charts';
 import styles from './PasarPage.module.css';
 
-const Coin3D = () => {
-    const ref = useRef();
-    useFrame((state, delta) => (ref.current.rotation.y += delta * 0.5));
+const ChartComponent = ({ data }) => {
+    const chartContainerRef = useRef();
+    const chartRef = useRef();
 
-    return (
-        <group ref={ref} scale={0.6}>
-            <Cylinder args={[1, 1, 0.2, 32]}>
-                <meshStandardMaterial color="#fbbF24" metalness={0.8} roughness={0.2} />
-            </Cylinder>
-            <Cylinder args={[0.8, 0.8, 0.21, 32]}>
-                <meshStandardMaterial color="#f59e0b" metalness={0.8} roughness={0.2} />
-            </Cylinder>
-        </group>
-    );
+    useEffect(() => {
+        if (!chartContainerRef.current || !data || data.length === 0) return;
+
+        chartRef.current = createChart(chartContainerRef.current, {
+            width: chartContainerRef.current.clientWidth,
+            height: 500,
+            layout: {
+                backgroundColor: '#1F2937',
+                textColor: 'rgba(255, 255, 255, 0.9)',
+            },
+            grid: {
+                vertLines: { color: '#374151' },
+                horzLines: { color: '#374151' },
+            },
+            crosshair: { mode: 0 },
+            rightPriceScale: { borderColor: '#4B5563' },
+            timeScale: { borderColor: '#4B5563' },
+        });
+
+        const candleSeries = chartRef.current.addCandlestickSeries({
+            upColor: '#4ADE80',
+            downColor: '#F87171',
+            borderDownColor: '#F87171',
+            borderUpColor: '#4ADE80',
+            wickDownColor: '#F87171',
+            wickUpColor: '#4ADE80',
+        });
+
+        candleSeries.setData(data);
+        chartRef.current.timeScale().fitContent();
+
+        const handleResize = () => {
+            chartRef.current.applyOptions({ width: chartContainerRef.current.clientWidth });
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            chartRef.current.remove();
+        };
+    }, [data]);
+
+    return <div ref={chartContainerRef} className={styles.chartContainer} />;
 };
 
+
 const PasarPage = () => {
-    const [marketData, setMarketData] = useState([]);
+    const [coinList, setCoinList] = useState([]);
+    const [selectedCoin, setSelectedCoin] = useState(null);
+    const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        axios.get('http://localhost:3001/api/pasar')
+        axios.get('http://localhost:3001/api/market/coins')
             .then(response => {
-                setMarketData(response.data);
+                setCoinList(response.data);
+                setSelectedCoin(response.data[0]);
                 setLoading(false);
             })
-            .catch(error => {
-                console.error("Gagal mengambil data pasar:", error);
-                setError("Tidak dapat memuat data pasar. Pastikan server backend berjalan.");
+            .catch(err => {
+                setError("Gagal memuat daftar koin.");
                 setLoading(false);
             });
     }, []);
 
-    const formatCurrency = (number) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(number);
-    };
+    useEffect(() => {
+        if (!selectedCoin) return;
 
-    if (loading) {
-        return <p className={styles.loadingText}>Memuat data pasar...</p>;
-    }
+        setChartData([]);
+        axios.get(`http://localhost:3001/api/market/chart/${selectedCoin.id}`)
+            .then(response => {
+                setChartData(response.data);
+            })
+            .catch(err => {
+                setError(`Gagal memuat data untuk ${selectedCoin.name}.`);
+            });
+    }, [selectedCoin]);
 
-    if (error) {
-        return <p className={styles.errorText}>{error}</p>;
-    }
+    const formatCurrency = (number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(number);
+
+    if (loading) return <p className={styles.statusText}>Memuat pasar...</p>;
+    if (error) return <p className={`${styles.statusText} ${styles.errorText}`}>{error}</p>;
 
     return (
-        <div>
-            <div className={styles.headerContainer}>
-                <h1 className={styles.pageTitle}>Harga Pasar Terkini</h1>
-                <div className={styles.canvasContainer}>
-                    <Canvas camera={{ position: [0, 2, 4], fov: 50 }}>
-                        <Suspense fallback={null}>
-                            <ambientLight intensity={0.5} />
-                            <directionalLight position={[5, 5, 5]} intensity={1} />
-                            <Coin3D />
-                        </Suspense>
-                    </Canvas>
-                </div>
+        <div className={styles.pageContainer}>
+            <div className={styles.sidebar}>
+                <h2 className={styles.sidebarTitle}>Aset</h2>
+                <ul>
+                    {coinList.map(coin => (
+                        <li 
+                            key={coin.id} 
+                            className={`${styles.coinItem} ${selectedCoin?.id === coin.id ? styles.selected : ''}`}
+                            onClick={() => setSelectedCoin(coin)}
+                        >
+                            <img src={coin.image} alt={coin.name} className={styles.coinImage} />
+                            <div className={styles.coinInfo}>
+                                <span className={styles.coinSymbol}>{coin.symbol.toUpperCase()}</span>
+                                <span className={styles.coinName}>{coin.name}</span>
+                            </div>
+                            <div className={styles.coinPrice}>
+                                {formatCurrency(coin.current_price)}
+                            </div>
+                        </li>
+                    ))}
+                </ul>
             </div>
-            
-            <div className={styles.tableContainer}>
-                <table className={styles.marketTable}>
-                    <thead>
-                        <tr>
-                            <th>Nama</th>
-                            <th>Harga Terakhir</th>
-                            <th>Perubahan 24j</th>
-                            <th>Tindakan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {marketData.map((coin, index) => (
-                            <tr 
-                                key={coin.id} 
-                                className={styles.animatedRow}
-                                style={{ animationDelay: `${index * 0.05}s` }}
-                            >
-                                <td>
-                                    <div className={styles.coinName}>
-                                        <span className={styles.coinSymbol}>{coin.symbol}</span>
-                                        <span>{coin.name}</span>
-                                    </div>
-                                </td>
-                                <td>{formatCurrency(coin.price)}</td>
-                                <td>
-                                    <span className={coin.change >= 0 ? styles.positiveChange : styles.negativeChange}>
-                                        {coin.change > 0 ? '+' : ''}{coin.change.toFixed(2)}%
-                                    </span>
-                                </td>
-                                <td>
-                                    <button className={styles.tradeButton}>Perdagangkan</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            <div className={styles.mainContent}>
+                {selectedCoin && (
+                    <div className={styles.chartHeader}>
+                        <img src={selectedCoin.image} alt={selectedCoin.name} className={styles.headerImage} />
+                        <h1>{selectedCoin.name} ({selectedCoin.symbol.toUpperCase()}/USD)</h1>
+                    </div>
+                )}
+                {chartData.length > 0 ? (
+                    <ChartComponent data={chartData} />
+                ) : (
+                    <div className={styles.chartPlaceholder}>Memuat data grafik...</div>
+                )}
             </div>
         </div>
     );
