@@ -2,19 +2,13 @@ const express = require('express');
 const http = require('http');
 const { WebSocketServer } = require('ws');
 const cors = require('cors');
+const axios = require('axios');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
-
-const mockNews = [
-    { id: 1, title: "Regulasi Kripto Baru Diumumkan oleh Pemerintah", source: "CryptoNews ID", time: "2 jam lalu" },
-    { id: 2, title: "Ethereum 'Merge' Berikutnya Dijadwalkan Bulan Depan", source: "Blockchain Times", time: "5 jam lalu" },
-    { id: 3, title: "Analisis Harga Bitcoin: Akankah Tembus Level Support?", source: "Analisa Kripto", time: "8 jam lalu" },
-    { id: 4, title: "5 Altcoin Potensial untuk Dipantau Minggu Ini", source: "Coinvestasi", time: "1 hari lalu" },
-];
 
 app.get('/api/pasar', (req, res) => {
     res.json([
@@ -24,14 +18,28 @@ app.get('/api/pasar', (req, res) => {
     ]);
 });
 
-app.get('/api/berita', (req, res) => {
-    res.json(mockNews);
+app.get('/api/berita', async (req, res) => {
+    const API_KEY = '9cf3ebb90cd347f3a3e5d4db17b275ab'; 
+    
+    if (API_KEY === '9cf3ebb90cd347f3a3e5d4db17b275ab') {
+        return res.status(400).json({ message: "Harap masukkan kunci API Anda di server.js" });
+    }
+
+    const url = `https://newsapi.org/v2/everything?q=cryptocurrency&sortBy=publishedAt&language=id&apiKey=${API_KEY}`;
+
+    try {
+        const response = await axios.get(url);
+        res.json(response.data.articles);
+    } catch (error) {
+        console.error("Error fetching news from NewsAPI:", error.message);
+        res.status(500).json({ message: "Gagal mengambil berita dari sumber eksternal." });
+    }
 });
+
 
 const server = http.createServer(app);
 
 const wss = new WebSocketServer({ server });
-
 wss.on('connection', (ws) => {
     console.log('Klien baru terhubung ke WebSocket');
     ws.on('message', (message) => {
