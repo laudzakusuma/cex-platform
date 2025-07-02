@@ -1,62 +1,110 @@
 import React, { useState, useEffect, useRef } from 'react';
+import styles from './ChatroomPage.module.css';
 
 const ChatroomPage = () => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
+    const [username, setUsername] = useState('');
+    const [isJoined, setIsJoined] = useState(false);
     const ws = useRef(null);
+    const messagesEndRef = useRef(null);
 
-    useEffect(() => {
-        // Ganti dengan alamat IP atau domain server WebSocket Anda jika perlu
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(scrollToBottom, [messages]);
+
+    const connectWebSocket = () => {
         ws.current = new WebSocket('ws://localhost:3001');
 
         ws.current.onopen = () => {
             console.log("WebSocket terhubung");
+            ws.current.send(JSON.stringify({
+                type: 'system',
+                message: `${username} telah bergabung.`
+            }));
         };
 
         ws.current.onmessage = (event) => {
-            const message = JSON.parse(event.data);
-            setMessages(prev => [...prev, message]);
+            const receivedMessage = JSON.parse(event.data);
+            setMessages(prev => [...prev, receivedMessage]);
         };
 
         ws.current.onclose = () => {
             console.log("WebSocket terputus");
         };
 
-        return () => {
-            if (ws.current) {
-                ws.current.close();
-            }
+        ws.current.onerror = (error) => {
+            console.error("WebSocket error:", error);
         };
-    }, []);
+    };
+
+    const handleJoin = (e) => {
+        e.preventDefault();
+        if (username.trim()) {
+            setIsJoined(true);
+            connectWebSocket();
+        }
+    };
 
     const sendMessage = (e) => {
         e.preventDefault();
         if (input.trim() && ws.current && ws.current.readyState === WebSocket.OPEN) {
-            ws.current.send(JSON.stringify({ user: 'PenggunaX', message: input }));
+            ws.current.send(JSON.stringify({
+                type: 'chat',
+                user: username,
+                message: input
+            }));
             setInput('');
         }
     };
 
+    if (!isJoined) {
+        return (
+            <div className={styles.joinContainer}>
+                <h1 className={styles.pageTitle}>Masuk ke Ruang Obrolan</h1>
+                <form onSubmit={handleJoin} className={styles.joinForm}>
+                    <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className={styles.usernameInput}
+                        placeholder="Masukkan nama Anda..."
+                        maxLength={15}
+                    />
+                    <button type="submit" className={styles.joinButton}>Gabung</button>
+                </form>
+            </div>
+        );
+    }
+
     return (
-        <div style={{ height: '75vh', display: 'flex', flexDirection: 'column', maxWidth: '768px', margin: 'auto' }}>
-            <h1 style={{ fontSize: '1.875rem', fontWeight: 'bold', marginBottom: '1rem' }}>Ruang Obrolan</h1>
-            <div style={{ flexGrow: 1, backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '0.5rem', padding: '1rem', overflowY: 'auto' }}>
+        <div className={styles.chatContainer}>
+            <h1 className={styles.pageTitle}>Ruang Obrolan Global</h1>
+            <div className={styles.messagesWindow}>
                 {messages.map((msg, index) => (
-                    <div key={index} style={{ marginBottom: '0.75rem' }}>
-                        <span style={{ fontWeight: 'bold', color: '#60A5FA' }}>{msg.user}: </span>
-                        <span>{msg.message}</span>
+                    <div key={index} className={
+                        msg.type === 'system' ? styles.systemMessage :
+                        msg.user === username ? styles.myMessage : styles.otherMessage
+                    }>
+                        {msg.type === 'chat' && (
+                            <div className={styles.username}>{msg.user}</div>
+                        )}
+                        <div className={styles.messageContent}>{msg.message}</div>
                     </div>
                 ))}
+                <div ref={messagesEndRef} />
             </div>
-            <form onSubmit={sendMessage} style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
+            <form onSubmit={sendMessage} className={styles.messageForm}>
                 <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ketik pesan..."
-                    style={{ flexGrow: 1, backgroundColor: '#374151', border: '1px solid #4B5563', borderRadius: '0.5rem', padding: '0.5rem 0.75rem', color: 'white', outline: 'none' }}
+                    className={styles.messageInput}
+                    placeholder="Ketik pesan Anda..."
                 />
-                <button type="submit" style={{ border: 'none', backgroundColor: '#2563EB', color: 'white', fontWeight: '600', padding: '0.5rem 1rem', borderRadius: '0.5rem', cursor: 'pointer' }}>Kirim</button>
+                <button type="submit" className={styles.sendButton}>Kirim</button>
             </form>
         </div>
     );
