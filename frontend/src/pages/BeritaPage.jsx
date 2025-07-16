@@ -8,7 +8,7 @@ const BeritaPage = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        axios.get('http://localhost:3001/api/berita')
+        axios.get('/api/berita')
             .then(response => {
                 const filteredNews = response.data.filter(item => item.urlToImage && item.title);
                 setNews(filteredNews);
@@ -41,7 +41,7 @@ const BeritaPage = () => {
 
     return (
         <div>
-            <h1 className={styles.pageTitle}>Berita Kripto Terkini</h1>
+            <h1 className={styles.pageTitle}>Crypto News</h1>
             <div className={styles.newsGrid}>
                 {news.map((item, index) => (
                     <a href={item.url} target="_blank" rel="noopener noreferrer" key={index} className={styles.newsCard}>
