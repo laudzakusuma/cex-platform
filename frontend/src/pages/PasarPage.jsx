@@ -10,7 +10,7 @@ const PasarPage = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        axios.get('http://localhost:3001/api/market/coins')
+        axios.get('/api/market/coins')
             .then(response => {
                 setCoinList(response.data);
                 if (response.data.length > 0) {
@@ -19,6 +19,7 @@ const PasarPage = () => {
                 setLoading(false);
             })
             .catch(err => {
+                console.error("Gagal memuat daftar koin:", err);
                 setError("Gagal memuat daftar koin. Pastikan server backend berjalan.");
                 setLoading(false);
             });
@@ -36,8 +37,8 @@ const PasarPage = () => {
                 <h2 className={styles.sidebarTitle}>Aset</h2>
                 <ul>
                     {coinList.map(coin => (
-                        <li 
-                            key={coin.id} 
+                        <li
+                            key={coin.id}
                             className={`${styles.coinItem} ${selectedCoin?.id === coin.id ? styles.selected : ''}`}
                             onClick={() => setSelectedCoin(coin)}
                         >
