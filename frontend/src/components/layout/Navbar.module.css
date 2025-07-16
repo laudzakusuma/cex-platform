@@ -53,31 +53,46 @@
   color: #FFFFFF;
 }
 
-.connectButton {
-  border: none;
-  color: white;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  background-color: #2563EB;
+.rightSection {
+    display: flex;
+    align-items: center;
 }
 
-.connectButton:hover {
-  background-color: #1D4ED8;
-  transform: scale(1.05);
+.authActions, .userInfo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
-/* --- Gaya Baru --- */
-.walletInfo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background-color: #1F2937;
-  padding: 0.25rem 0.25rem 0.25rem 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid #374151;
+.userInfo span {
+    color: #9CA3AF;
+    font-size: 0.875rem;
+}
+
+.authButton {
+    border: 1px solid #374151;
+    color: #D1D5DB;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    background-color: transparent;
+    text-decoration: none;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.authButton:hover {
+    background-color: #374151;
+}
+
+.authButton.primary {
+    background-color: #3B82F6;
+    border-color: #3B82F6;
+    color: white;
+}
+
+.authButton.primary:hover {
+    background-color: #2563EB;
 }
 
 .addressText {
